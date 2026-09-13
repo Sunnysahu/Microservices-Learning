@@ -3,13 +3,11 @@ using InventoryService.Repositories;
 
 namespace InventoryService.Services
 {
-    public class InventoryService : IInventoryService
+    public class InventoryManager : IInventoryService
     {
         private readonly IInventoryRepository _repository;
-
             
-        public InventoryService(IInventoryRepository repository) =>_repository = repository;
-
+        public InventoryManager(IInventoryRepository repository) =>_repository = repository;
 
         public async Task<InventoryItem?> GetByProductIdAsync(int productId, CancellationToken cancellationToken)
         {
