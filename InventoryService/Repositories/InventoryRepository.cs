@@ -26,5 +26,19 @@ namespace InventoryService.Repositories
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
         }
+
+        public async Task<bool> ReserveStockAsync(int productId, int quantity, CancellationToken cancellationToken)
+        {
+            var item = await _context.Inventory
+                .FirstOrDefaultAsync(x => x.ProductId == productId, cancellationToken);
+
+            if (item is null || item.StockQuantity < quantity) return false;
+
+            item.StockQuantity -= quantity;
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return true;
+        }
     }
 }

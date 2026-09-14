@@ -18,5 +18,10 @@ namespace InventoryService.Services
         {
             return await _repository.GetAllAsync(cancellationToken);
         }
+
+        public async Task<bool> ReserveStockAsync(int productId, int quantity, CancellationToken cancellationToken)
+        {
+            return await _repository.ReserveStockAsync(productId, quantity, cancellationToken);
+        }
     }
 }

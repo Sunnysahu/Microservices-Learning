@@ -47,5 +47,25 @@ namespace InventoryService.Controllers
 
             return Ok(response);
         }
+
+        [HttpPost("reserve")]
+        public async Task<IActionResult> ReserveStock(ReserveStockRequest request, CancellationToken cancellationToken)
+        {
+            var reserved = await _inventoryService.ReserveStockAsync(
+                request.ProductId,
+                request.Quantity,
+                cancellationToken
+            );
+
+            if (!reserved)
+            {
+                return BadRequest("Insufficient stock or product not found.");
+            }
+
+            return Ok(new
+            {
+                message = "Stock reserved successfully."
+            });
+        }
     }
 }
