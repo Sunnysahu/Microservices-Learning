@@ -2,25 +2,21 @@
 
 ## Build and Run
 
-Now build the project again.
+1. Build the project.
+2. Run **InventoryService**.
+3. Open Swagger UI to access the available endpoints:
+   * `GET /api/Inventory`
+   * `GET /api/Inventory/{productId}`
 
-If successful, run **InventoryService**.
+---
 
-Open Swagger UI.
+## Testing Endpoints
 
-You should see:
+### 1. Test Get All Inventory
+* **Method:** `GET`
+* **URL:** `/api/Inventory`
 
-- `GET /api/Inventory`
-- `GET /api/Inventory/{productId}`
-
-## Test GET /api/Inventory
-
-Execute:
-
-`GET /api/Inventory`
-
-Expected result:
-
+#### Expected Result
 ```json
 [
   {
@@ -40,62 +36,57 @@ Expected result:
     "stockQuantity": 20
   }
 ]
-````
-
- ## Test Product 1
-
- Execute:
-
- `GET /api/Inventory/1`
-
- Expected:
 
 ```
+
+---
+
+### 2. Test Product 1
+
+* **Method:** `GET`
+* **URL:** `/api/Inventory/1`
+
+#### Expected Result
+
+```json
 {
   "productId": 1,
   "stockQuantity": 10
 }
-```
-
- ## Test Product 3
-
- It is important to test a product with zero stock.
-
- Execute:
-
- `GET /api/Inventory/3`
-
- Expected:
 
 ```
+
+---
+
+### 3. Test Product 3 (Zero Stock)
+
+> **Note:** It is important to test a product with zero stock, as this will be useful later when the Order Service checks whether stock is available.
+
+* **Method:** `GET`
+* **URL:** `/api/Inventory/3`
+
+#### Expected Result
+
+```json
 {
   "productId": 3,
   "stockQuantity": 0
 }
+
 ```
 
- This will be useful later when the Order Service checks whether stock is available.
+---
 
- ## Test a Nonexistent Product
+### 4. Test a Nonexistent Product
 
- Try:
+* **Method:** `GET`
+* **URL:** `/api/Inventory/9999`
 
- `GET /api/Inventory/9999`
+#### Expected Result
 
- Expected:
+* **Status Code:** `404 Not Found`
+* *(Note: A basic `NotFound()` is returned for now. Consistent response formats and global exception handling will be introduced later).*
 
- `404 Not Found`
+---
 
- We're returning a basic `NotFound()` for now.
-
- Later, we'll introduce our consistent response format and global exception handling.
-
-
- Please build → run → test all four cases:
-
-- `GET /api/Inventory`
-- `GET /api/Inventory/1`
-- `GET /api/Inventory/3`
-- `GET /api/Inventory/9999`
-
- Make sure all four cases work as expected before continuing.
+> **Checklist:** Make sure to build, run, and verify all four test cases work as expected before continuing.

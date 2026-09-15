@@ -29,7 +29,7 @@ if (app.Environment.IsDevelopment())
         options.DarkMode = true;
         //options.Theme = ScalarTheme.Mars;
         options.WithTheme(ScalarTheme.DeepSpace);
-        options.WithTitle("My AI Agent");
+        options.WithTitle("Inventory Service");
         options.DefaultHttpClient = new();
         options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
         options.WithSearchHotKey("k");
