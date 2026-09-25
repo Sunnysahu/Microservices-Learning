@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using OrderService.DTOs;
-using OrderService.Models;
 using OrderService.Services;
 
 namespace OrderService.Controllers

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
+using OrderService.Middleware;
 using OrderService.Repositories;
 using OrderService.Services;
 using Scalar.AspNetCore;
@@ -19,7 +20,15 @@ builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
 
+builder.Services.AddHttpClient<IInventoryClient, InventoryClient>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7114/");
+    client.Timeout = TimeSpan.FromSeconds(500);
+});
+
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
