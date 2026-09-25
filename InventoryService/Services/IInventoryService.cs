@@ -1,4 +1,5 @@
-﻿using InventoryService.Models;
+﻿using InventoryService.DTOs;
+using InventoryService.Models;
 
 namespace InventoryService.Services
 {
@@ -8,6 +9,7 @@ namespace InventoryService.Services
 
         Task<List<InventoryItem>> GetAllAsync(CancellationToken cancellationToken);
 
-        Task<bool> ReserveStockAsync(int productId, int quantity, CancellationToken cancellationToken);
+        Task<ReserveStockResult> ReserveStockBatchAsync(List<(int ProductId, int Quantity)> items, 
+            CancellationToken cancellationToken);
     }
 }

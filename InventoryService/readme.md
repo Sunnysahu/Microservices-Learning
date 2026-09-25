@@ -10,7 +10,7 @@
 
 ---
 
-## Testing Endpoints
+## Testing Endpoints -> `https://localhost:7114/api/Inventory/reserve-batch`
 
 ### 1. Test Get All Inventory
 * **Method:** `GET`
@@ -41,52 +41,99 @@
 
 ---
 
-### 2. Test Product 1
+````
+# Stock Reservation API — Test Cases
 
-* **Method:** `GET`
-* **URL:** `/api/Inventory/1`
+This document covers the expected responses for the stock reservation endpoint.
 
-#### Expected Result
+## 1. ✅ Sufficient Stock → `200 OK`
 
-```json
-{
-  "productId": 1,
-  "stockQuantity": 10
-}
+Use a product that currently has enough stock, for example **Product 1**.
 
-```
-
----
-
-### 3. Test Product 3 (Zero Stock)
-
-> **Note:** It is important to test a product with zero stock, as this will be useful later when the Order Service checks whether stock is available.
-
-* **Method:** `GET`
-* **URL:** `/api/Inventory/3`
-
-#### Expected Result
+### Request
 
 ```json
 {
-  "productId": 3,
-  "stockQuantity": 0
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ]
 }
+````
+
+ ### Expected Response
+
+```
+{
+  "success": true,
+  "message": "Stock reserved successfully."
+}
+```
+
+ **HTTP Status:** `200 OK`
+
+---
+
+ ## 2\. ❌ Product Doesn't Exist → `404 Not Found`
+
+ Use a product ID that doesn't exist, for example **9999**.
+
+ ### Request
+
+```
+{
+  "items": [
+    {
+      "productId": 9999,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+ ### Expected Response
+
+```
+{
+  "success": false,
+  "message": "Product 9999 was not found."
+}
+```
+
+ **HTTP Status:** `404 Not Found`
+
+---
+
+ ## 3\. ❌ Insufficient Stock → `409 Conflict`
+
+ Use **Product 3**, which previously had `0` stock.
+
+ ### Request
+
+```
+{
+  "items": [
+    {
+      "productId": 3,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+ ### Expected Response
+
+```
+{
+  "success": false,
+  "message": "Insufficient stock for Product 3."
+}
+```
+
+ **HTTP Status:** `409 Conflict`
 
 ```
 
----
-
-### 4. Test a Nonexistent Product
-
-* **Method:** `GET`
-* **URL:** `/api/Inventory/9999`
-
-#### Expected Result
-
-* **Status Code:** `404 Not Found`
-* *(Note: A basic `NotFound()` is returned for now. Consistent response formats and global exception handling will be introduced later).*
-
----
-
-> **Checklist:** Make sure to build, run, and verify all four test cases work as expected before continuing.
+```

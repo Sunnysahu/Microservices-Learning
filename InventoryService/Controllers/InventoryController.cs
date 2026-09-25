@@ -48,24 +48,36 @@ namespace InventoryService.Controllers
             return Ok(response);
         }
 
-        [HttpPost("reserve")]
-        public async Task<IActionResult> ReserveStock(ReserveStockRequest request, CancellationToken cancellationToken)
+        [HttpPost("reserve-batch")]
+        public async Task<IActionResult> ReserveStock([FromBody] ReserveStockBatchRequest request, CancellationToken cancellationToken)
         {
-            var reserved = await _inventoryService.ReserveStockAsync(
-                request.ProductId,
-                request.Quantity,
-                cancellationToken
-            );
 
-            if (!reserved)
-            {
-                return BadRequest("Insufficient stock or product not found.");
-            }
+            var items = request.Items.Select(x => (x.ProductId, x.Quantity)).ToList();
 
-            return Ok(new
+            var result = await _inventoryService.ReserveStockBatchAsync(items, cancellationToken);
+
+            return result.Status switch
             {
-                message = "Stock reserved successfully."
-            });
+                ReserveStockStatus.Success => Ok(new
+                {
+                    success = true,
+                    message = result.Message
+                }),
+
+                ReserveStockStatus.ProductNotFound => NotFound(new
+                {
+                    success = false,
+                    message = result.Message
+                }),
+
+                ReserveStockStatus.InsufficientStock => Conflict(new
+                {
+                    success = false,
+                    message = result.Message
+                }),
+
+                _ => StatusCode(StatusCodes.Status500InternalServerError)
+            };
         }
     }
 }
