@@ -41,12 +41,9 @@
 
 ---
 
-````
 # Stock Reservation API — Test Cases
-
 This document covers the expected responses for the stock reservation endpoint.
-
-## 1. ✅ Sufficient Stock → `200 OK`
+##1. ✅ Sufficient Stock → `200 OK`
 
 Use a product that currently has enough stock, for example **Product 1**.
 
@@ -133,7 +130,3 @@ Use a product that currently has enough stock, for example **Product 1**.
 ```
 
  **HTTP Status:** `409 Conflict`
-
-```
-
-```
