@@ -26,10 +26,11 @@ namespace InventoryService.Repositories
             return await _context.Inventory.AsNoTracking().ToListAsync(cancellationToken);
         }
 
-        public async Task<ReserveStockResult> ReserveStockBatchAsync(List<(int ProductId, int Quantity)> items,
-        CancellationToken cancellationToken)
+        public async Task<ReserveStockResult> ReserveStockBatchAsync(List<(int ProductId, int Quantity)> items, 
+            CancellationToken cancellationToken)
         {
-            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
@@ -40,9 +41,10 @@ namespace InventoryService.Repositories
 
                 var inventoryItems =
                     await _context.Inventory
-                    .Where(x => productIds.Contains(x.ProductId))
-                    .ToListAsync(cancellationToken);
+                        .Where(x => productIds.Contains(x.ProductId))
+                        .ToListAsync(cancellationToken);
 
+                // 1. Validate everything first
                 foreach (var item in items)
                 {
                     var inventoryItem = inventoryItems.FirstOrDefault(x => x.ProductId == item.ProductId);
@@ -57,6 +59,7 @@ namespace InventoryService.Repositories
                             Message = $"Product {item.ProductId} was not found."
                         };
                     }
+
                     if (inventoryItem.StockQuantity < item.Quantity)
                     {
                         await transaction.RollbackAsync(cancellationToken);
@@ -68,6 +71,20 @@ namespace InventoryService.Repositories
                         };
                     }
                 }
+
+                // 2. All products have enough stock, so decrease it
+                foreach (var item in items)
+                {
+                    var inventoryItem = inventoryItems.First(x => x.ProductId == item.ProductId);
+
+                    inventoryItem.StockQuantity -= item.Quantity;
+                }
+
+                // 3. Save the changes
+                await _context.SaveChangesAsync(cancellationToken);
+
+                // 4. Commit the transaction
+                await transaction.CommitAsync(cancellationToken);
 
                 return new ReserveStockResult
                 {
