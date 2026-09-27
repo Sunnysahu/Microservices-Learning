@@ -62,7 +62,27 @@ namespace OrderService.Controllers
         [HttpPost]
         public async Task<ActionResult<OrderResponse>> Create(CreateOrderRequest request, CancellationToken cancellationToken)
         {
-            var order = await _orderService.CreateAsync(request, cancellationToken);
+            var result = await _orderService.CreateAsync(request, cancellationToken);
+
+            if (result.Status == CreateOrderStatus.ProductNotFound)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = result.Message
+                });
+            }
+
+            if (result.Status == CreateOrderStatus.InsufficientStock)
+            {
+                return Conflict(new
+                {
+                    success = false,
+                    message = result.Message
+                });
+            }
+
+            var order = result.Order!;
 
             var response = new OrderResponse
             {

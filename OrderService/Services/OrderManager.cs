@@ -22,18 +22,32 @@ namespace OrderService.Services
             return await _repository.GetByIdAsync(id, cancellationToken);
         }
 
-        public async Task<Order> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
+        public async Task<CreateOrderResult> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
         {
-
-            var items = request.Items
+            var items = request
+                .Items
                 .Select(item => (item.ProductId, item.Quantity))
                 .ToList();
 
-            var reserved = await _inventoryClient.ReserveStockBatchAsync(items, cancellationToken);
+            var reservationResult = 
+                await _inventoryClient.ReserveStockBatchAsync(items, cancellationToken);
 
-            if (!reserved)
+            if (reservationResult.Status == InventoryReservationStatus.ProductNotFound)
             {
-                throw new InvalidOperationException("Could not reserve stock for the order.");
+                return new CreateOrderResult
+                {
+                    Status = CreateOrderStatus.ProductNotFound,
+                    Message = reservationResult.Message
+                };
+            }
+
+            if (reservationResult.Status == InventoryReservationStatus.InsufficientStock)
+            {
+                return new CreateOrderResult
+                {
+                    Status = CreateOrderStatus.InsufficientStock,
+                    Message = reservationResult.Message
+                };
             }
 
             var order = new Order
@@ -41,15 +55,21 @@ namespace OrderService.Services
                 CustomerName = request.CustomerName,
                 Status = "Pending",
                 CreatedAt = DateTime.Now,
-
-                Items = [.. request.Items.Select(item => new OrderItem
+                Items = request.Items.Select(item => new OrderItem
                 {
                     ProductId = item.ProductId,
                     Quantity = item.Quantity
-                })]
+                }).ToList()
             };
 
-            return await _repository.CreateAsync(order, cancellationToken);
+            var createdOrder = await _repository.CreateAsync(order, cancellationToken);
+
+            return new CreateOrderResult
+            {
+                Status = CreateOrderStatus.Success,
+                Message = "Order created successfully.",
+                Order = createdOrder
+            };
         }
     }
 }

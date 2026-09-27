@@ -8,7 +8,7 @@ namespace OrderService.Services
 
         public InventoryClient(HttpClient httpClient) => _httpClient = httpClient;
 
-        public async Task<bool> ReserveStockBatchAsync(List<(int ProductId, int Quantity)> items, CancellationToken cancellationToken)
+        public async Task<InventoryReservationResult> ReserveStockBatchAsync(List<(int ProductId, int Quantity)> items, CancellationToken cancellationToken)
         {
             var request = new
             {
@@ -22,11 +22,31 @@ namespace OrderService.Services
             var response = await _httpClient
                 .PostAsJsonAsync("api/Inventory/reserve-batch", request, cancellationToken);
 
-            if (response.StatusCode == HttpStatusCode.BadRequest) return false;
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return new InventoryReservationResult
+                {
+                    Status = InventoryReservationStatus.ProductNotFound,
+                    Message = "One or more products were not found."
+                };
+            }
+
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                return new InventoryReservationResult
+                {
+                    Status = InventoryReservationStatus.InsufficientStock,
+                    Message = "Insufficient stock."
+                };
+            }
 
             response.EnsureSuccessStatusCode();
 
-            return true;
+            return new InventoryReservationResult
+            {
+                Status = InventoryReservationStatus.Success,
+                Message = "Stock reserved successfully."
+            };
         }
     }
 }

@@ -9,6 +9,6 @@ namespace OrderService.Services
 
         Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken);
 
-        Task<Order> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
+        Task<CreateOrderResult> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
     }
 }
