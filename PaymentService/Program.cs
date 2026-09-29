@@ -1,17 +1,36 @@
+using Microsoft.EntityFrameworkCore;
+using PaymentService.Data;
+using PaymentService.Repositories;
+using PaymentService.Services;
+using Scalar.AspNetCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
 builder.Services.AddOpenApi();
+
+builder.Services.AddDbContext<PaymentDbContext>(options => 
+    options.UseSqlServer(builder.Configuration.GetConnectionString("PaymentDb")));
+
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IPaymentService, PaymentManager>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.DarkMode = true;
+        //options.Theme = ScalarTheme.Mars;
+        options.WithTheme(ScalarTheme.DeepSpace);
+        options.WithTitle("Payment Service");
+        options.DefaultHttpClient = new();
+        options.WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        options.WithSearchHotKey("k");
+    });
 }
 
 app.UseHttpsRedirection();
