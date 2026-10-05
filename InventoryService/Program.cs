@@ -18,6 +18,7 @@ builder.Services.AddDbContext<InventoryDbContext>(options =>
 builder.Services.AddScoped<IInventoryRepository, InventoryRepository>();
 builder.Services.AddScoped<IInventoryService, InventoryManager>();
 
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

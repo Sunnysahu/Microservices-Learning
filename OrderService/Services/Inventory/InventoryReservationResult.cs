@@ -1,4 +1,4 @@
-﻿namespace OrderService.Services
+﻿namespace OrderService.Services.Inventory
 {
     public enum InventoryReservationStatus
     {

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OrderService.DTOs;
 using OrderService.Services;
+using OrderService.Services.Payment;
 
 namespace OrderService.Controllers
 {
@@ -9,8 +10,26 @@ namespace OrderService.Controllers
     public class OrderController : ControllerBase
     {
         private readonly IOrderService _orderService;
+        private readonly IPaymentClient _paymentClient;
 
-        public OrderController(IOrderService orderService) => _orderService = orderService;
+        public OrderController(IOrderService orderService, IPaymentClient paymentClient)
+        {
+            _orderService = orderService;
+            _paymentClient = paymentClient;
+        }
+
+        [HttpPost("test-payment")]
+        public async Task<IActionResult> TestPayment(
+            int orderId, 
+            decimal amount, 
+            string idempotencyKey, 
+            CancellationToken cancellationToken
+        )
+        {
+            var payment = await _paymentClient.CreatePaymentAsync(orderId, amount, idempotencyKey, cancellationToken);
+
+            return Ok(payment);
+        }
 
         [HttpGet]
         public async Task<ActionResult<List<OrderResponse>>> GetAll(CancellationToken cancellationToken)
@@ -26,7 +45,8 @@ namespace OrderService.Controllers
                 Items = order.Items.Select(item => new OrderItemResponse
                 {
                     ProductId = item.ProductId,
-                    Quantity = item.Quantity
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
                 }).ToList()
             }).ToList();
 
@@ -93,7 +113,8 @@ namespace OrderService.Controllers
                 Items = order.Items.Select(item => new OrderItemResponse
                 {
                     ProductId = item.ProductId,
-                    Quantity = item.Quantity
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
                 }).ToList()
             };
 

@@ -10,5 +10,7 @@ namespace InventoryService.Data
         }
 
         public DbSet<InventoryItem> Inventory => Set<InventoryItem>();
+
+        public DbSet<InventoryCompensation> InventoryCompensations => Set<InventoryCompensation>();
     }
 }

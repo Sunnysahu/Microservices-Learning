@@ -11,5 +11,8 @@ namespace InventoryService.Services
 
         Task<ReserveStockResult> ReserveStockBatchAsync(List<(int ProductId, int Quantity)> items, 
             CancellationToken cancellationToken);
+
+        Task<ReleaseStockResult> ReleaseStockBatchAsync(int orderId, 
+            List<(int ProductId, int Quantity)> items, CancellationToken cancellationToken);
     }
 }

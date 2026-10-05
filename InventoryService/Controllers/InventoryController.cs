@@ -1,5 +1,6 @@
 ﻿using InventoryService.DTOs;
 using InventoryService.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InventoryService.Controllers
@@ -78,6 +79,30 @@ namespace InventoryService.Controllers
 
                 _ => StatusCode(StatusCodes.Status500InternalServerError)
             };
+        }
+
+        [HttpPost("release-batch")]
+        public async Task<IActionResult> ReleaseStockBatch(ReleaseStockRequest request, CancellationToken cancellationToken)
+        {
+            var items = request.Items
+                .Select(x => (x.ProductId, x.Quantity)).ToList();
+
+            var released = await _inventoryService.ReleaseStockBatchAsync(request.OrderId, items, cancellationToken);
+
+            if (released.Status == ReleaseStockStatus.ProductNotFound)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = released.Message
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = released.Message
+            });
         }
     }
 }

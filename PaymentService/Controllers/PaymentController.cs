@@ -29,7 +29,7 @@ namespace PaymentService.Controllers
 
             return Ok(payment);
         }
-
+        
         [Route("payment")]
         [HttpPost]
         public async Task<ActionResult<PaymentResponse>> Create(CreatePaymentRequest request, CancellationToken cancellationToken)
@@ -43,9 +43,18 @@ namespace PaymentService.Controllers
                 });
             }
 
-            var payment = await _paymentService.CreateAsync(request, cancellationToken);
+            var result = await _paymentService.CreateAsync(request, cancellationToken);
 
-            return Ok(payment);
+            if (result.Status == CreatePaymentStatus.IdempotencyConflict)
+            {
+                return Conflict(new
+                {
+                    success = false,
+                    message = result.Message
+                });
+            }
+
+            return Ok(result.Payment);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using PaymentService.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
+using PaymentService.DTOs;
 using PaymentService.Models;
 using PaymentService.Repositories;
 
@@ -10,21 +11,36 @@ namespace PaymentService.Services
 
         public PaymentManager(IPaymentRepository repository) => _repository = repository;
 
-        public async Task<PaymentResponse> CreateAsync(CreatePaymentRequest request, CancellationToken cancellationToken)
+        public async Task<CreatePaymentResult> CreateAsync(CreatePaymentRequest request, CancellationToken cancellationToken)
         {
             var existingPayment =
                 await _repository.GetByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken);
 
             if (existingPayment is not null)
             {
-                return new PaymentResponse
+                if (existingPayment.OrderId != request.OrderId ||
+                    existingPayment.Amount != request.Amount)
                 {
-                    Id = existingPayment.Id,
-                    OrderId = existingPayment.OrderId,
-                    Amount = existingPayment.Amount,
-                    Status = existingPayment.Status,
-                    IdempotencyKey = existingPayment.IdempotencyKey,
-                    CreatedAt = existingPayment.CreatedAt
+                    return new CreatePaymentResult
+                    {
+                        Status = CreatePaymentStatus.IdempotencyConflict,
+                        Message = "The idempotency key was already used for a different payment."
+                    };
+                }
+
+                return new CreatePaymentResult
+                {
+                    Status = CreatePaymentStatus.Success,
+                    Message = "Existing payment returned.",
+                    Payment = new PaymentResponse
+                    {
+                        Id = existingPayment.Id,
+                        OrderId = existingPayment.OrderId,
+                        Amount = existingPayment.Amount,
+                        Status = existingPayment.Status,
+                        IdempotencyKey = existingPayment.IdempotencyKey,
+                        CreatedAt = existingPayment.CreatedAt
+                    }
                 };
             }
 
@@ -34,20 +50,57 @@ namespace PaymentService.Services
                 Amount = request.Amount,
                 Status = "Paid",
                 IdempotencyKey = request.IdempotencyKey,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.Now
             };
 
-            var createdPayment = await _repository.CreateAsync(payment, cancellationToken);
-
-            return new PaymentResponse
+            try
             {
-                Id = createdPayment.Id,
-                OrderId = createdPayment.OrderId,
-                Amount = createdPayment.Amount,
-                Status = createdPayment.Status,
-                IdempotencyKey = createdPayment.IdempotencyKey,
-                CreatedAt = createdPayment.CreatedAt
-            };
+                var createdPayment = await _repository.CreateAsync(payment, cancellationToken);
+
+                return new CreatePaymentResult
+                {
+                    Status = CreatePaymentStatus.Success,
+                    Message = "Payment created successfully.",
+                    Payment = new PaymentResponse
+                    {
+                        Id = createdPayment.Id,
+                        OrderId = createdPayment.OrderId,
+                        Amount = createdPayment.Amount,
+                        Status = createdPayment.Status,
+                        IdempotencyKey = createdPayment.IdempotencyKey,
+                        CreatedAt = createdPayment.CreatedAt
+                    }
+                };
+            }
+            catch (DbUpdateException ex)
+                when (ex.InnerException?.Message.Contains(
+                    "UX_Payments_IdempotencyKey", 
+                    StringComparison.OrdinalIgnoreCase) == true
+                )
+            {
+                var existingPaymentAfterConflict =
+                    await _repository.GetByIdempotencyKeyAsync(request.IdempotencyKey, cancellationToken);
+
+                if (existingPaymentAfterConflict is not null)
+                {
+                    return new CreatePaymentResult
+                    {
+                        Status = CreatePaymentStatus.Success,
+                        Message = "Existing payment returned.",
+                        Payment = new PaymentResponse
+                        {
+                            Id = existingPaymentAfterConflict.Id,
+                            OrderId = existingPaymentAfterConflict.OrderId,
+                            Amount = existingPaymentAfterConflict.Amount,
+                            Status = existingPaymentAfterConflict.Status,
+                            IdempotencyKey = existingPaymentAfterConflict.IdempotencyKey,
+                            CreatedAt = existingPaymentAfterConflict.CreatedAt
+                        }
+                    };
+                }
+
+                throw;
+            }
         }
 
         public async Task<PaymentResponse?> GetByOrderIdAsync(int orderId, CancellationToken cancellationToken)

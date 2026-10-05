@@ -3,6 +3,8 @@ using OrderService.Data;
 using OrderService.Middleware;
 using OrderService.Repositories;
 using OrderService.Services;
+using OrderService.Services.Inventory;
+using OrderService.Services.Payment;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +26,11 @@ builder.Services.AddHttpClient<IInventoryClient, InventoryClient>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7114/");
     client.Timeout = TimeSpan.FromSeconds(500);
+});
+
+builder.Services.AddHttpClient<IPaymentClient, PaymentClient>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7239/");
 });
 
 var app = builder.Build();

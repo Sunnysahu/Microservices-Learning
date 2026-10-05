@@ -98,5 +98,84 @@ namespace InventoryService.Repositories
                 throw;
             }
         }
+
+        public async Task<ReleaseStockResult> ReleaseStockBatchAsync(int orderId, 
+            List<(int ProductId, int Quantity)> items, CancellationToken cancellationToken)
+        {
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                var compensationExists =
+                    await _context.InventoryCompensations.AnyAsync(x => x.OrderId == orderId, cancellationToken);
+
+                if (compensationExists)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+
+                    return new ReleaseStockResult
+                    {
+                        Status = ReleaseStockStatus.AlreadyProcessed,
+                        Message = "Compensation already processed."
+                    };
+                }
+
+                var productIds = items
+                    .Select(x => x.ProductId)
+                    .Distinct()
+                    .ToList();
+
+                var inventoryItems =
+                    await _context.Inventory
+                        .Where(x => productIds.Contains(x.ProductId))
+                        .ToListAsync(cancellationToken);
+
+                foreach (var item in items)
+                {
+                    var inventoryItem = inventoryItems
+                        .FirstOrDefault(x => x.ProductId == item.ProductId);
+
+                    if (inventoryItem is null)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+
+                        return new ReleaseStockResult
+                        {
+                            Status = ReleaseStockStatus.ProductNotFound,
+                            Message = $"Product {item.ProductId} was not found."
+                        };
+                    }
+                }
+
+                foreach (var item in items)
+                {
+                    var inventoryItem = inventoryItems.First(x => x.ProductId == item.ProductId);
+
+                    inventoryItem.StockQuantity += item.Quantity;
+                }
+
+                _context.InventoryCompensations.Add(new InventoryCompensation
+                {
+                    OrderId = orderId,
+                    CreatedAt = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+
+                return new ReleaseStockResult
+                {
+                    Status = ReleaseStockStatus.Released,
+                    Message = "Stock released successfully."
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        }
     }
 }

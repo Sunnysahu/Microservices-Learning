@@ -7,6 +7,8 @@ namespace OrderService.DTOs
         [Required(AllowEmptyStrings = false, ErrorMessage = "User Must Enter the Name")]
         public string CustomerName { get; set; } = string.Empty;
 
+        public string PaymentIdempotencyKey { get; set; } = string.Empty;
+
         public List<CreateOrderItemRequest> Items { get; set; } = new();
     }
 
@@ -15,5 +17,7 @@ namespace OrderService.DTOs
         public int ProductId { get; set; }
 
         public int Quantity { get; set; }
+
+        public decimal UnitPrice { get; set; }
     }
 }

@@ -1,6 +1,7 @@
-﻿using System.Net;
+﻿using OrderService.Models;
+using System.Net;
 
-namespace OrderService.Services
+namespace OrderService.Services.Inventory
 {
     public class InventoryClient : IInventoryClient
     {
@@ -47,6 +48,29 @@ namespace OrderService.Services
                 Status = InventoryReservationStatus.Success,
                 Message = "Stock reserved successfully."
             };
+        }
+
+        public async Task<bool> ReleaseStockBatchAsync(int orderId, List<(int ProductId, int Quantity)> items, 
+            CancellationToken cancellationToken)
+        {
+            var request = new
+            {
+                orderId,
+                items = items.Select(item => new
+                {
+                    productId = item.ProductId,
+                    quantity = item.Quantity
+                }).ToList()
+            };
+
+            var response = await _httpClient.PostAsJsonAsync(
+                "api/Inventory/release-batch",
+                request,
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode) return false; 
+
+            return true;
         }
     }
 }

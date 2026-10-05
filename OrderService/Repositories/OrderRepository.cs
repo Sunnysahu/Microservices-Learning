@@ -37,5 +37,12 @@ namespace OrderService.Repositories
 
             return order;
         }
+
+        public async Task UpdateAsync(Order order, CancellationToken cancellationToken)
+        {
+            _context.Orders.Update(order);
+
+            await _context.SaveChangesAsync(cancellationToken);
+        }
     }
 }
