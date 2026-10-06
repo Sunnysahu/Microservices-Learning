@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
+using OrderService.DTOs;
 using OrderService.Middleware;
+using OrderService.Models;
 using OrderService.Repositories;
 using OrderService.Services;
 using OrderService.Services.Inventory;
@@ -32,6 +34,7 @@ builder.Services.AddHttpClient<IPaymentClient, PaymentClient>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7239/");
 });
+
 
 var app = builder.Build();
 

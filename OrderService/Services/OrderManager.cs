@@ -69,7 +69,13 @@ namespace OrderService.Services
                     }).ToList()
             };
 
-            var createdOrder = await _repository.CreateAsync(order, cancellationToken);
+            var outboxMessage = new OutboxMessage
+            {
+                EventType = "OrderCreated",
+                CreatedAt = DateTime.Now
+            };
+
+            var createdOrder = await _repository.CreateAsync(order, outboxMessage, cancellationToken);
 
             // Payment Microservice Call
             try
