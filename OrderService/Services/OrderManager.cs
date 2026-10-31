@@ -3,6 +3,7 @@ using OrderService.Models;
 using OrderService.Repositories;
 using OrderService.Services.Inventory;
 using OrderService.Services.Payment;
+using System.Text.Json;
 
 namespace OrderService.Services
 {
@@ -25,10 +26,10 @@ namespace OrderService.Services
             return await _repository.GetByIdAsync(id, cancellationToken);
         }
 
+
         public async Task<CreateOrderResult> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
         {
-            var items = request
-                .Items
+            var items = request.Items
                 .Select(item => (item.ProductId, item.Quantity))
                 .ToList();
 
@@ -58,8 +59,8 @@ namespace OrderService.Services
             var order = new Order
             {
                 CustomerName = request.CustomerName,
-                Status = "Pending",
-                CreatedAt = DateTime.Now,
+                Status = "PendingPayment",
+                CreatedAt = DateTime.UtcNow,
                 Items = request.Items
                     .Select(item => new OrderItem
                     {
@@ -69,52 +70,20 @@ namespace OrderService.Services
                     }).ToList()
             };
 
-            var outboxMessage = new OutboxMessage
-            {
-                EventType = "OrderCreated",
-                CreatedAt = DateTime.Now
-            };
-
-            var createdOrder = await _repository.CreateAsync(order, outboxMessage, cancellationToken);
-
-            // Payment Microservice Call
-            try
-            {
-                var payment = await _paymentClient.CreatePaymentAsync(
-                    createdOrder.Id,
-                    totalAmount,
-                    request.PaymentIdempotencyKey,
-                    cancellationToken
-                );
-            }
-            catch (HttpRequestException)
-            {
-
-                Console.WriteLine("PAYMENT FAILED");
-
-                createdOrder.Status = "PaymentFailed";
-
-                await _repository.UpdateAsync(createdOrder, cancellationToken);
-
-                Console.WriteLine("ORDER MARKED PAYMENT FAILED");
-
-                var released = await _inventoryClient.ReleaseStockBatchAsync(createdOrder.Id, items, cancellationToken);
-
-                Console.WriteLine($"STOCK RELEASE RESULT: {released}");
-
-                throw;
-            }
-
-            createdOrder.Status = "Paid";
-
-            await _repository.UpdateAsync(createdOrder, cancellationToken);
+            var createdOrder = await _repository.CreateAsync(
+                order, 
+                request.PaymentIdempotencyKey,
+                totalAmount,
+                cancellationToken
+            );
 
             return new CreateOrderResult
             {
                 Status = CreateOrderStatus.Success,
-                Message = "Order created and payment completed successfully.",
+                Message = "Order created. Payment is being processed.",
                 Order = createdOrder
             };
         }
+
     }
 }

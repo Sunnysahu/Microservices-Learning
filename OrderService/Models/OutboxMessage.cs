@@ -11,5 +11,9 @@
         public DateTime CreatedAt { get; set; }
 
         public DateTime? ProcessedAt { get; set; }
+
+        public int RetryCount { get; set; }
+
+        public DateTime? FailedAt { get; set; }
     }
 }

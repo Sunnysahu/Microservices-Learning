@@ -25,29 +25,35 @@ namespace OrderService.Repositories
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
-        public async Task<Order> CreateAsync(Order order, OutboxMessage outboxMessage, CancellationToken cancellationToken)
-        {
 
+
+        public async Task<Order> CreateAsync(Order order, string paymentIdempotencyKey, decimal totalAmount, CancellationToken cancellationToken)
+        {
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
                 _context.Orders.Add(order);
-
                 await _context.SaveChangesAsync(cancellationToken);
 
-                outboxMessage.Payload = JsonSerializer.Serialize(new
+                var outboxMessage = new OutboxMessage
                 {
-                    OrderId = order.Id,
-                    CustomerName = order.CustomerName,
-                    Items = order.Items.Select(x => new
+                    EventType = "OrderCreated",
+                    CreatedAt = DateTime.Now,
+                    Payload = JsonSerializer.Serialize(new
                     {
-                        x.ProductId,
-                        x.Quantity,
-                        x.UnitPrice
-                    }),
-                    TotalAmount = order.Items.Sum(x => x.Quantity * x.UnitPrice)
-                });
+                        OrderId = order.Id,
+                        CustomerName = order.CustomerName,
+                        PaymentIdempotencyKey = paymentIdempotencyKey,
+                        Items = order.Items.Select(item => new
+                        {
+                            item.ProductId,
+                            item.Quantity,
+                            item.UnitPrice
+                        }),
+                        TotalAmount = totalAmount
+                    })
+                };
 
                 _context.OutboxMessages.Add(outboxMessage);
 
@@ -63,6 +69,7 @@ namespace OrderService.Repositories
                 throw;
             }
         }
+
 
         public async Task UpdateAsync(Order order, CancellationToken cancellationToken)
         {

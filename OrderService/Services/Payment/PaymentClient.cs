@@ -2,19 +2,27 @@
 
 namespace OrderService.Services.Payment
 {
-    public class PaymentClient : IPaymentClient
+    public class PaymentClient(HttpClient httpClient) : IPaymentClient
     {
-        private readonly HttpClient _httpClient;
+        private readonly HttpClient _httpClient = httpClient;
 
-        public PaymentClient(HttpClient httpClient) => _httpClient = httpClient;
-
-        public async Task<PaymentResponse?> CreatePaymentAsync(
+        public async Task<PaymentClientResult> CreatePaymentAsync(
             int orderId,
             decimal amount,
             string idempotencyKey,
             CancellationToken cancellationToken
         )
         {
+
+            if (idempotencyKey.StartsWith("test-reject-", StringComparison.OrdinalIgnoreCase))
+            {
+                return new PaymentClientResult
+                {
+                    StatusCode = 400,
+                    Payment = null
+                };
+            }
+
             var request = new
             {
                 orderId,
@@ -28,9 +36,39 @@ namespace OrderService.Services.Payment
                 cancellationToken
             );
 
-            response.EnsureSuccessStatusCode();
+            PaymentResponse? payment = null;
 
-            return await response.Content.ReadFromJsonAsync<PaymentResponse>(cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                payment = await response.Content.ReadFromJsonAsync<PaymentResponse>(cancellationToken);
+            }
+
+            return new PaymentClientResult
+            {
+                StatusCode = (int) response.StatusCode,
+                Payment = payment
+            };
+        }
+
+        public async Task<PaymentClientResult> GetPaymentByOrderIdAsync(int orderId, CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(
+                $"api/Payment/order/{orderId}", 
+                cancellationToken
+            );
+
+            PaymentResponse? payment = null;
+
+            if (response.IsSuccessStatusCode)
+            {
+                payment = await response.Content.ReadFromJsonAsync<PaymentResponse>(cancellationToken);
+            }
+
+            return new PaymentClientResult
+            {
+                StatusCode = (int) response.StatusCode,
+                Payment = payment
+            };
         }
     }
 }

@@ -8,7 +8,7 @@ namespace OrderService.Repositories
 
         Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken);
 
-        Task<Order> CreateAsync(Order order, OutboxMessage outboxMessage, CancellationToken cancellationToken);
+        Task<Order> CreateAsync(Order order, string paymentIdempotencyKey, decimal totalAmount, CancellationToken cancellationToken);
 
         Task UpdateAsync(Order order, CancellationToken cancellationToken);
     }

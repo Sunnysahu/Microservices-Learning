@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
-using OrderService.DTOs;
 using OrderService.Middleware;
-using OrderService.Models;
 using OrderService.Repositories;
 using OrderService.Services;
 using OrderService.Services.Inventory;
@@ -13,12 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<OrderDbContext>(options =>
 {
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("OrderDb"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("OrderDb"));
 });
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderManager>();
+
+builder.Services.AddHostedService<OutboxProcessor>();
 
 builder.Services.AddControllers();
 
